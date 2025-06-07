@@ -273,10 +273,10 @@ export class AudioManager {
         this.engineSound.source.loop = true;
         this.engineSound.source.playbackRate.setValueAtTime(0.8, this.audioContext.currentTime); // Start slower
         
-        // Fade in the engine sound
+        // Fade in the engine sound (very quiet - 2% volume)
         this.engineSound.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
         this.engineSound.gainNode.gain.linearRampToValueAtTime(
-            this.volume.engine * this.volume.master, 
+            this.volume.engine * this.volume.master * 0.02, 
             this.audioContext.currentTime + 0.5
         );
         
