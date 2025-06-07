@@ -2,6 +2,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 body {
@@ -9,23 +14,24 @@ body {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     overflow: hidden;
     height: 100vh;
+    height: -webkit-fill-available;
+    position: fixed;
+    width: 100%;
+    touch-action: none;
 }
 
 #game-container {
     position: relative;
     width: 100vw;
     height: 100vh;
+    height: -webkit-fill-available;
 }
 
 #game-canvas {
     display: block;
     width: 100%;
     height: 100%;
-    cursor: grab;
-}
-
-#game-canvas:active {
-    cursor: grabbing;
+    touch-action: none;
 }
 
 #ui-overlay {
@@ -38,62 +44,33 @@ body {
     z-index: 100;
 }
 
-#controls-info {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 14px;
-    line-height: 1.4;
-    min-width: 200px;
-}
-
-.control-section h3 {
-    margin: 0 0 10px 0;
-    color: #00aaff;
-    font-size: 16px;
-    text-align: center;
-    border-bottom: 1px solid #00aaff;
-    padding-bottom: 5px;
-}
-
-.control-section p {
-    margin: 0 0 5px 0;
-    font-family: 'Courier New', monospace;
-}
-
-.control-section p:last-child {
-    margin-bottom: 0;
-}
-
+/* Mobile Flight Display - Compact Top-Right */
 #flight-display {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: env(safe-area-inset-top, 10px);
+    right: 10px;
     background: rgba(0, 0, 0, 0.8);
     color: white;
-    padding: 15px;
+    padding: 8px 12px;
     border-radius: 8px;
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 12px;
+    line-height: 1.3;
     text-align: right;
-    min-width: 180px;
+    min-width: 120px;
+    backdrop-filter: blur(5px);
 }
 
 .flight-section h3 {
-    margin: 0 0 10px 0;
+    margin: 0 0 6px 0;
     color: #00ff00;
-    font-size: 16px;
+    font-size: 14px;
     text-align: center;
     border-bottom: 1px solid #00ff00;
-    padding-bottom: 5px;
+    padding-bottom: 3px;
 }
 
 .flight-section p {
-    margin: 0 0 5px 0;
+    margin: 0 0 3px 0;
     font-family: 'Courier New', monospace;
 }
 
@@ -109,4 +86,232 @@ body {
 /* Speed indicator color coding */
 .speed-low { color: #ff4444 !important; }
 .speed-normal { color: #00ff00 !important; }
-.speed-high { color: #ffaa00 !important; } 
+.speed-high { color: #ffaa00 !important; }
+
+/* ===== MOBILE TOUCH CONTROLS ===== */
+
+#mobile-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 200;
+}
+
+/* Virtual Joystick */
+#joystick-container {
+    position: absolute;
+    bottom: env(safe-area-inset-bottom, 20px);
+    left: 20px;
+    pointer-events: auto;
+}
+
+#joystick-base {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 70%, transparent 100%);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+}
+
+#joystick-base.active {
+    border-color: rgba(0, 170, 255, 0.8);
+    background: radial-gradient(circle, rgba(0, 170, 255, 0.2) 0%, rgba(0, 170, 255, 0.1) 70%, transparent 100%);
+}
+
+#joystick-stick {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    position: absolute;
+    transition: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#joystick-label {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Speed Controls */
+#speed-controls {
+    position: absolute;
+    bottom: env(safe-area-inset-bottom, 40px);
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.speed-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.speed-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Fire Button */
+#fire-container {
+    position: absolute;
+    bottom: env(safe-area-inset-bottom, 40px);
+    right: 90px;
+    pointer-events: auto;
+}
+
+.fire-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff4444 0%, #cc3333 100%);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Camera Button */
+#camera-container {
+    position: absolute;
+    top: env(safe-area-inset-top, 20px);
+    left: 20px;
+    pointer-events: auto;
+}
+
+.camera-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+    font-size: 16px;
+}
+
+/* General Button Styles */
+.control-btn {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.control-btn:active,
+.control-btn.pressed {
+    transform: scale(0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.control-btn:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive Design */
+@media screen and (max-width: 480px) {
+    #joystick-base {
+        width: 100px;
+        height: 100px;
+    }
+    
+    #joystick-stick {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .speed-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+    
+    .fire-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 12px;
+    }
+    
+    .camera-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+    
+    #flight-display {
+        font-size: 11px;
+        padding: 6px 10px;
+        min-width: 100px;
+    }
+}
+
+@media screen and (max-height: 600px) {
+    #joystick-container {
+        bottom: env(safe-area-inset-bottom, 15px);
+        left: 15px;
+    }
+    
+    #speed-controls {
+        bottom: env(safe-area-inset-bottom, 30px);
+    }
+    
+    #fire-container {
+        bottom: env(safe-area-inset-bottom, 30px);
+    }
+}
+
+/* Landscape orientation optimizations */
+@media screen and (orientation: landscape) {
+    #speed-controls {
+        right: 15px;
+    }
+    
+    #fire-container {
+        right: 75px;
+    }
+}
+
+/* Hide controls on very small screens in portrait */
+@media screen and (max-width: 360px) and (orientation: portrait) {
+    .camera-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+    
+    #flight-display {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+} 

@@ -2,29 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Plane Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>3D Plane Game - Mobile</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         <div id="ui-overlay">
-            <div id="controls-info">
-                <div class="control-section">
-                    <h3>Flight Controls</h3>
-                    <p>W/S: Pull Up/Push Down</p>
-                    <p>A/D: Roll Left/Right</p>
-                    <p>Q/E: Speed +/-</p>
-                    <p>SPACE: Fire Weapons</p>
-                    <p>C: Toggle Camera</p>
-                </div>
-            </div>
             <div id="flight-display">
                 <div class="flight-section">
                     <h3>Flight Data</h3>
-                    <p>Speed: <span id="speed" class="value">15</span> units</p>
-                    <p>Altitude: <span id="altitude" class="value">25</span> units</p>
+                    <p>Speed: <span id="speed" class="value">15</span></p>
+                    <p>Alt: <span id="altitude" class="value">25</span></p>
                     <p>Score: <span id="score" class="value">0</span></p>
                     <p>UFOs: <span id="ufo-count" class="value">0</span></p>
                 </div>

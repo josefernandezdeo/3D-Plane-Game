@@ -2,6 +2,7 @@ import { Plane } from './modules/Plane.js';
 import { City } from './modules/City.js';
 import { UFOManager } from './modules/UFO.js';
 import { WeaponSystem, ExplosionSystem } from './modules/Weapon.js';
+import { TouchControls } from './modules/TouchControls.js';
 
 class Game {
     constructor() {
@@ -13,6 +14,7 @@ class Game {
         this.ufoManager = null;
         this.weaponSystem = null;
         this.explosionSystem = null;
+        this.touchControls = null;
         this.controls = {
             forward: false,
             backward: false,
@@ -149,26 +151,10 @@ class Game {
     }
 
     setupControls() {
-        // Keyboard controls for plane movement
-        window.addEventListener('keydown', (event) => {
-            this.keys[event.code] = true;
-            this.updateControlsFromKeys();
-        });
+        // Touch controls
+        this.touchControls = new TouchControls();
         
-        window.addEventListener('keyup', (event) => {
-            this.keys[event.code] = false;
-            this.updateControlsFromKeys();
-        });
-        
-                // Camera mode toggle
-        window.addEventListener('keydown', (event) => {
-            if (event.code === 'KeyC') {
-                this.cameraMode = this.cameraMode === 'follow' ? 'orbit' : 'follow';
-                console.log(`Camera mode: ${this.cameraMode}`);
-            }
-        });
-        
-        // Prevent default behavior for control keys
+        // Prevent default behavior for control keys (still needed for any remaining keyboard input)
         window.addEventListener('keydown', (event) => {
             if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'KeyC'].includes(event.code)) {
                 event.preventDefault();
@@ -214,16 +200,6 @@ class Game {
          }
      }
     
-    updateControlsFromKeys() {
-        this.controls.forward = this.keys['KeyW'] || false;
-        this.controls.backward = this.keys['KeyS'] || false;
-        this.controls.left = this.keys['KeyA'] || false;
-        this.controls.right = this.keys['KeyD'] || false;
-        this.controls.up = this.keys['KeyQ'] || false;
-        this.controls.down = this.keys['KeyE'] || false;
-        this.controls.fire = this.keys['Space'] || false;
-    }
-
     animate() {
         requestAnimationFrame(() => this.animate());
         
@@ -233,6 +209,17 @@ class Game {
         this.lastFrameTime = currentTime;
         
         this.gameTime += 1;
+        
+        // Update controls from touch input
+        if (this.touchControls) {
+            this.controls = this.touchControls.getControls();
+            
+            // Handle camera toggle
+            if (this.touchControls.consumeCameraToggle()) {
+                this.cameraMode = this.cameraMode === 'follow' ? 'orbit' : 'follow';
+                console.log(`Camera mode: ${this.cameraMode}`);
+            }
+        }
         
         // Update plane with controls and delta time
         if (this.plane) {
