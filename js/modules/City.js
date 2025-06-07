@@ -57,13 +57,37 @@ export class City {
     }
 
     createBuilding(x, z, width, height, depth) {
-        // Building geometry
+        // Enhanced building geometry with better materials
         const buildingGeometry = new THREE.BoxGeometry(width, height, depth);
         
-        // Random building color (various city building colors)
-        const colors = [0x606060, 0x707070, 0x505050, 0x656565, 0x4a4a4a, 0x5a5a5a];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const buildingMaterial = new THREE.MeshLambertMaterial({ color: color });
+        // More realistic building colors and materials
+        const buildingTypes = [
+            { color: 0x8b7355, type: 'brick' },    // Brown brick
+            { color: 0x708090, type: 'concrete' }, // Slate gray concrete
+            { color: 0x696969, type: 'steel' },    // Dim gray steel
+            { color: 0x2f4f4f, type: 'glass' },    // Dark slate glass
+            { color: 0x778899, type: 'modern' },   // Light slate modern
+            { color: 0x556b2f, type: 'office' }    // Dark olive office
+        ];
+        
+        const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)];
+        
+        let buildingMaterial;
+        if (buildingType.type === 'glass') {
+            buildingMaterial = new THREE.MeshPhongMaterial({ 
+                color: buildingType.color,
+                shininess: 100,
+                specular: 0x444444,
+                transparent: true,
+                opacity: 0.9
+            });
+        } else {
+            buildingMaterial = new THREE.MeshPhongMaterial({ 
+                color: buildingType.color,
+                shininess: 30,
+                specular: 0x222222
+            });
+        }
         
         const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
         
@@ -75,67 +99,128 @@ export class City {
         this.group.add(building);
         this.buildings.push(building);
         
-        // Add windows/details randomly
-        if (Math.random() > 0.5) {
-            this.addBuildingDetails(building, x, z, width, height, depth);
-        }
+        // Add detailed windows and features
+        this.addBuildingDetails(building, x, z, width, height, depth, buildingType);
+        
+        // Add rooftop features
+        this.addRooftopDetails(building, x, z, width, height, depth);
     }
 
-    addBuildingDetails(building, x, z, width, height, depth) {
-        // Add simple window lights
-        const windowsPerFloor = Math.floor(width) + Math.floor(depth);
-        const floors = Math.floor(height / 3);
+    addBuildingDetails(building, x, z, width, height, depth, buildingType) {
+        // Add detailed window grid system
+        const floorHeight = 2.5;
+        const floors = Math.floor(height / floorHeight);
+        const windowSpacing = 1.2;
         
+        // Calculate window grid for each face
+        const windowsPerFaceX = Math.max(1, Math.floor(width / windowSpacing));
+        const windowsPerFaceZ = Math.max(1, Math.floor(depth / windowSpacing));
+        
+        // Front and back faces
         for (let floor = 1; floor <= floors; floor++) {
-            for (let window = 0; window < windowsPerFloor; window++) {
-                if (Math.random() > 0.7) { // 30% chance for lit windows
-                    const windowGeometry = new THREE.PlaneGeometry(0.3, 0.3);
-                    const windowMaterial = new THREE.MeshBasicMaterial({ 
-                        color: 0xffff99,
-                        transparent: true,
-                        opacity: 0.8
-                    });
-                    const windowLight = new THREE.Mesh(windowGeometry, windowMaterial);
-                    
-                    // Random position on building face
-                    const side = Math.floor(Math.random() * 4);
-                    switch(side) {
-                        case 0: // Front face
-                            windowLight.position.set(
-                                x + (Math.random() - 0.5) * width * 0.8,
-                                (height / 2 - 2) + (floor * 3) - height / 2,
-                                z + depth / 2 + 0.01
-                            );
-                            break;
-                        case 1: // Back face
-                            windowLight.position.set(
-                                x + (Math.random() - 0.5) * width * 0.8,
-                                (height / 2 - 2) + (floor * 3) - height / 2,
-                                z - depth / 2 - 0.01
-                            );
-                            windowLight.rotation.y = Math.PI;
-                            break;
-                        case 2: // Left face
-                            windowLight.position.set(
-                                x - width / 2 - 0.01,
-                                (height / 2 - 2) + (floor * 3) - height / 2,
-                                z + (Math.random() - 0.5) * depth * 0.8
-                            );
-                            windowLight.rotation.y = Math.PI / 2;
-                            break;
-                        case 3: // Right face
-                            windowLight.position.set(
-                                x + width / 2 + 0.01,
-                                (height / 2 - 2) + (floor * 3) - height / 2,
-                                z + (Math.random() - 0.5) * depth * 0.8
-                            );
-                            windowLight.rotation.y = -Math.PI / 2;
-                            break;
-                    }
-                    
-                    this.group.add(windowLight);
+            for (let i = 0; i < windowsPerFaceX; i++) {
+                const windowX = (i - (windowsPerFaceX - 1) / 2) * windowSpacing;
+                const windowY = (height / 2 - 2) + (floor * floorHeight) - height / 2;
+                
+                // Front face windows
+                if (Math.random() > 0.3) { // 70% chance for lit windows
+                    this.createWindow(x + windowX, windowY, z + depth / 2 + 0.02, 0, buildingType);
+                }
+                
+                // Back face windows
+                if (Math.random() > 0.3) {
+                    this.createWindow(x + windowX, windowY, z - depth / 2 - 0.02, Math.PI, buildingType);
                 }
             }
+        }
+        
+        // Left and right faces
+        for (let floor = 1; floor <= floors; floor++) {
+            for (let i = 0; i < windowsPerFaceZ; i++) {
+                const windowZ = (i - (windowsPerFaceZ - 1) / 2) * windowSpacing;
+                const windowY = (height / 2 - 2) + (floor * floorHeight) - height / 2;
+                
+                // Left face windows
+                if (Math.random() > 0.3) {
+                    this.createWindow(x - width / 2 - 0.02, windowY, z + windowZ, Math.PI / 2, buildingType);
+                }
+                
+                // Right face windows
+                if (Math.random() > 0.3) {
+                    this.createWindow(x + width / 2 + 0.02, windowY, z + windowZ, -Math.PI / 2, buildingType);
+                }
+            }
+        }
+    }
+    
+    createWindow(x, y, z, rotation, buildingType) {
+        const windowGeometry = new THREE.PlaneGeometry(0.8, 1.5);
+        
+        let windowMaterial;
+        if (buildingType.type === 'glass') {
+            // Glass building - blue tinted windows
+            windowMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x4488ff,
+                transparent: true,
+                opacity: 0.7
+            });
+        } else {
+            // Regular building - warm light windows
+            const lightColors = [0xffff88, 0xffffaa, 0xffeeaa, 0xffffff];
+            const color = lightColors[Math.floor(Math.random() * lightColors.length)];
+            windowMaterial = new THREE.MeshBasicMaterial({ 
+                color: color,
+                transparent: true,
+                opacity: 0.9
+            });
+        }
+        
+        const window = new THREE.Mesh(windowGeometry, windowMaterial);
+        window.position.set(x, y, z);
+        window.rotation.y = rotation;
+        
+        this.group.add(window);
+    }
+    
+    addRooftopDetails(building, x, z, width, height, depth) {
+        const rooftopY = height / 2 - 2 + height / 2;
+        
+        // Add rooftop structures randomly
+        if (Math.random() > 0.6) {
+            // Air conditioning units
+            const acGeometry = new THREE.BoxGeometry(0.8, 0.4, 0.6);
+            const acMaterial = new THREE.MeshPhongMaterial({ color: 0x555555 });
+            const ac = new THREE.Mesh(acGeometry, acMaterial);
+            ac.position.set(
+                x + (Math.random() - 0.5) * width * 0.6,
+                rooftopY + 0.2,
+                z + (Math.random() - 0.5) * depth * 0.6
+            );
+            ac.castShadow = true;
+            this.group.add(ac);
+        }
+        
+        if (Math.random() > 0.7) {
+            // Antenna
+            const antennaGeometry = new THREE.CylinderGeometry(0.02, 0.02, 2, 6);
+            const antennaMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
+            antenna.position.set(x, rooftopY + 1, z);
+            antenna.castShadow = true;
+            this.group.add(antenna);
+        }
+        
+        if (Math.random() > 0.8) {
+            // Rooftop light
+            const lightGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+            const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const light = new THREE.Mesh(lightGeometry, lightMaterial);
+            light.position.set(
+                x + (Math.random() - 0.5) * width * 0.8,
+                rooftopY + 0.15,
+                z + (Math.random() - 0.5) * depth * 0.8
+            );
+            this.group.add(light);
         }
     }
 

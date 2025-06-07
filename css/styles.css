@@ -38,22 +38,75 @@ body {
     z-index: 100;
 }
 
-#debug-info {
+#controls-info {
     position: absolute;
-    top: 20px;
+    bottom: 20px;
     left: 20px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     color: white;
     padding: 15px;
     border-radius: 8px;
     font-size: 14px;
     line-height: 1.4;
+    min-width: 200px;
 }
 
-#debug-info p {
+.control-section h3 {
+    margin: 0 0 10px 0;
+    color: #00aaff;
+    font-size: 16px;
+    text-align: center;
+    border-bottom: 1px solid #00aaff;
+    padding-bottom: 5px;
+}
+
+.control-section p {
     margin: 0 0 5px 0;
+    font-family: 'Courier New', monospace;
 }
 
-#debug-info p:last-child {
+.control-section p:last-child {
     margin-bottom: 0;
-} 
+}
+
+#flight-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: right;
+    min-width: 180px;
+}
+
+.flight-section h3 {
+    margin: 0 0 10px 0;
+    color: #00ff00;
+    font-size: 16px;
+    text-align: center;
+    border-bottom: 1px solid #00ff00;
+    padding-bottom: 5px;
+}
+
+.flight-section p {
+    margin: 0 0 5px 0;
+    font-family: 'Courier New', monospace;
+}
+
+.flight-section p:last-child {
+    margin-bottom: 0;
+}
+
+.flight-section .value {
+    color: #00ff00;
+    font-weight: bold;
+}
+
+/* Speed indicator color coding */
+.speed-low { color: #ff4444 !important; }
+.speed-normal { color: #00ff00 !important; }
+.speed-high { color: #ffaa00 !important; } 

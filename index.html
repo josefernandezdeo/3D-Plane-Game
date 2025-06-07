@@ -10,12 +10,24 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         <div id="ui-overlay">
-            <div id="debug-info">
-                <p>Milestone 3: Flight Controls</p>
-                <p>W/S: Forward/Backward</p>
-                <p>A/D: Turn Left/Right</p>
-                <p>Q/E: Climb/Dive</p>
-                <p>Fly around the city!</p>
+            <div id="controls-info">
+                <div class="control-section">
+                    <h3>Flight Controls</h3>
+                    <p>W/S: Pull Up/Push Down</p>
+                    <p>A/D: Roll Left/Right</p>
+                    <p>Q/E: Speed +/-</p>
+                    <p>SPACE: Fire Weapons</p>
+                    <p>C: Toggle Camera</p>
+                </div>
+            </div>
+            <div id="flight-display">
+                <div class="flight-section">
+                    <h3>Flight Data</h3>
+                    <p>Speed: <span id="speed" class="value">15</span> units</p>
+                    <p>Altitude: <span id="altitude" class="value">25</span> units</p>
+                    <p>Score: <span id="score" class="value">0</span></p>
+                    <p>UFOs: <span id="ufo-count" class="value">0</span></p>
+                </div>
             </div>
         </div>
     </div>
