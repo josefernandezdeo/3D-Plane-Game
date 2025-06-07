@@ -1,4 +1,5 @@
 import { Plane } from './modules/Plane.js';
+import { City } from './modules/City.js';
 
 class Game {
     constructor() {
@@ -6,7 +7,16 @@ class Game {
         this.camera = null;
         this.renderer = null;
         this.plane = null;
-        this.controls = null;
+        this.city = null;
+        this.controls = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+        this.keys = {};
         
         this.init();
     }
@@ -16,6 +26,7 @@ class Game {
         this.createCamera();
         this.createRenderer();
         this.createLighting();
+        this.createCity();
         this.createPlane();
         this.setupControls();
         this.animate();
@@ -36,9 +47,9 @@ class Game {
         const aspect = window.innerWidth / window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
         
-        // Position camera behind the plane for tail view
-        this.camera.position.set(0, 2, -8);
-        this.camera.lookAt(0, 0, 0);
+        // Camera will follow the plane, initial position
+        this.camera.position.set(0, 20, -20);
+        this.camera.lookAt(0, 15, 0);
     }
 
     createRenderer() {
@@ -70,65 +81,79 @@ class Game {
         this.scene.add(fillLight);
     }
 
+    createCity() {
+        this.city = new City();
+        this.scene.add(this.city.getGroup());
+    }
+
     createPlane() {
         this.plane = new Plane();
         this.scene.add(this.plane.getGroup());
     }
 
     setupControls() {
-        // Simple mouse controls for rotating the view
-        let isMouseDown = false;
-        let mouseX = 0;
-        let mouseY = 0;
-        
-        const canvas = this.renderer.domElement;
-        
-        canvas.addEventListener('mousedown', (event) => {
-            isMouseDown = true;
-            mouseX = event.clientX;
-            mouseY = event.clientY;
+        // Keyboard controls for plane movement
+        window.addEventListener('keydown', (event) => {
+            this.keys[event.code] = true;
+            this.updateControlsFromKeys();
         });
         
-        canvas.addEventListener('mousemove', (event) => {
-            if (!isMouseDown) return;
-            
-            const deltaX = event.clientX - mouseX;
-            const deltaY = event.clientY - mouseY;
-            
-            // Rotate camera around the plane
-            const spherical = new THREE.Spherical();
-            spherical.setFromVector3(this.camera.position);
-            
-            spherical.theta -= deltaX * 0.01;
-            spherical.phi += deltaY * 0.01;
-            
-            // Limit vertical rotation
-            spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
-            
-            this.camera.position.setFromSpherical(spherical);
-            this.camera.lookAt(0, 0, 0);
-            
-            mouseX = event.clientX;
-            mouseY = event.clientY;
+        window.addEventListener('keyup', (event) => {
+            this.keys[event.code] = false;
+            this.updateControlsFromKeys();
         });
         
-        canvas.addEventListener('mouseup', () => {
-            isMouseDown = false;
+        // Prevent default behavior for control keys
+        window.addEventListener('keydown', (event) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(event.code)) {
+                event.preventDefault();
+            }
         });
-        
-        // Prevent context menu on right click
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    
+    updateControlsFromKeys() {
+        this.controls.forward = this.keys['KeyW'] || false;
+        this.controls.backward = this.keys['KeyS'] || false;
+        this.controls.left = this.keys['KeyA'] || false;
+        this.controls.right = this.keys['KeyD'] || false;
+        this.controls.up = this.keys['KeyQ'] || false;
+        this.controls.down = this.keys['KeyE'] || false;
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
         
-        // Update plane (rotates propeller)
+        // Update plane with controls
         if (this.plane) {
-            this.plane.update();
+            this.plane.update(this.controls);
+            this.updateCamera();
+        }
+        
+        // Update city (could animate lights, etc.)
+        if (this.city) {
+            this.city.update();
         }
         
         this.renderer.render(this.scene, this.camera);
+    }
+    
+    updateCamera() {
+        // Follow the plane from behind and slightly above
+        const planePosition = this.plane.getGroup().position;
+        const planeRotation = this.plane.getGroup().rotation;
+        
+        // Calculate camera position behind the plane
+        const cameraOffset = new THREE.Vector3(0, 8, -15);
+        cameraOffset.applyEuler(planeRotation);
+        
+        // Smoothly move camera to follow plane
+        const targetPosition = planePosition.clone().add(cameraOffset);
+        this.camera.position.lerp(targetPosition, 0.1);
+        
+        // Look at the plane
+        const lookAtTarget = planePosition.clone();
+        lookAtTarget.y += 2; // Look slightly above the plane
+        this.camera.lookAt(lookAtTarget);
     }
 
     onWindowResize() {
