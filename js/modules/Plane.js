@@ -229,9 +229,9 @@ export class Plane {
         let rollInput = 0;
         let speedInput = 0;
         
-        // W/S: Pitch control (±60° limit) - Fixed direction for both visual and physics
-        if (controls.forward) pitchInput = 1;  // Nose up (W pulls back - positive pitch)
-        if (controls.backward) pitchInput = -1; // Nose down (S pushes forward - negative pitch)
+        // W/S: Pitch control (±60° limit) - Reversed controls
+        if (controls.forward) pitchInput = -1;  // Nose down (W pushes forward - negative pitch)
+        if (controls.backward) pitchInput = 1; // Nose up (S pulls back - positive pitch)
         
         // A/D: Roll control
         if (controls.left) rollInput = -1;  // Roll left

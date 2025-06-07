@@ -10,6 +10,8 @@ export class City {
         this.createBuildings();
         this.createStreets();
         this.addCityLights();
+        this.createClouds();
+        this.createTrees();
     }
 
     createGround() {
@@ -292,6 +294,117 @@ export class City {
                 this.group.add(pointLight);
             }
         }
+    }
+
+    createClouds() {
+        // Create fluffy clouds floating above the city
+        const cloudCount = 12;
+        
+        for (let i = 0; i < cloudCount; i++) {
+            const cloudGroup = new THREE.Group();
+            
+            // Create each cloud from multiple spheres for a fluffy appearance
+            const sphereCount = 4 + Math.floor(Math.random() * 4); // 4-7 spheres per cloud
+            
+            for (let j = 0; j < sphereCount; j++) {
+                const sphereSize = 3 + Math.random() * 4; // Random sizes 3-7 units
+                const sphereGeometry = new THREE.SphereGeometry(sphereSize, 8, 6);
+                const cloudMaterial = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const sphere = new THREE.Mesh(sphereGeometry, cloudMaterial);
+                
+                // Position spheres to form cloud shape
+                sphere.position.set(
+                    (Math.random() - 0.5) * 15, // Spread horizontally
+                    (Math.random() - 0.5) * 4,  // Small vertical variation
+                    (Math.random() - 0.5) * 12  // Spread in depth
+                );
+                
+                cloudGroup.add(sphere);
+            }
+            
+            // Position cloud group in the sky
+            cloudGroup.position.set(
+                (Math.random() - 0.5) * 120, // Spread across city
+                40 + Math.random() * 20,     // Height 40-60 units
+                (Math.random() - 0.5) * 120  // Spread across city
+            );
+            
+            // Add gentle rotation for variety
+            cloudGroup.rotation.y = Math.random() * Math.PI * 2;
+            
+            this.group.add(cloudGroup);
+        }
+    }
+    
+    createTrees() {
+        // Add trees throughout the city for a more natural look
+        const treeCount = 25;
+        
+        for (let i = 0; i < treeCount; i++) {
+            const treeGroup = new THREE.Group();
+            
+            // Tree trunk
+            const trunkHeight = 2 + Math.random() * 3; // 2-5 units tall
+            const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.4, trunkHeight, 8);
+            const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Brown
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = trunkHeight / 2 - 2;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+            
+            // Tree foliage - multiple green spheres for bushy appearance
+            const foliageCount = 2 + Math.floor(Math.random() * 3); // 2-4 foliage clusters
+            
+            for (let j = 0; j < foliageCount; j++) {
+                const foliageSize = 1.5 + Math.random() * 2; // 1.5-3.5 units
+                const foliageGeometry = new THREE.SphereGeometry(foliageSize, 8, 6);
+                const foliageMaterial = new THREE.MeshLambertMaterial({ 
+                    color: j === 0 ? 0x228B22 : 0x32CD32 // Mix of dark and light green
+                });
+                const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+                
+                foliage.position.set(
+                    (Math.random() - 0.5) * 2,
+                    trunkHeight - 1 + Math.random() * 2,
+                    (Math.random() - 0.5) * 2
+                );
+                foliage.castShadow = true;
+                foliage.receiveShadow = true;
+                treeGroup.add(foliage);
+            }
+            
+            // Position trees around the city (avoid building locations)
+            let treeX, treeZ;
+            let attempts = 0;
+            do {
+                treeX = (Math.random() - 0.5) * 80;
+                treeZ = (Math.random() - 0.5) * 80;
+                attempts++;
+            } while (this.isNearBuilding(treeX, treeZ) && attempts < 10);
+            
+            treeGroup.position.set(treeX, 0, treeZ);
+            this.group.add(treeGroup);
+        }
+    }
+    
+    isNearBuilding(x, z) {
+        // Simple check to avoid placing trees too close to buildings
+        const buildingSpacing = 8;
+        const streetsEvery = 3;
+        
+        const gridX = Math.floor((x + 40) / buildingSpacing);
+        const gridZ = Math.floor((z + 40) / buildingSpacing);
+        
+        // If it's not a street location, it might have a building
+        if (gridX % streetsEvery !== 0 && gridZ % streetsEvery !== 0) {
+            return true;
+        }
+        return false;
     }
 
     getGroup() {
