@@ -68,37 +68,12 @@ class Game {
             this.touchControls.audioManager = this.audioManager;
         }
         
-        // Add audio control buttons to UI
-        this.createAudioControls();
-    }
-
-    createAudioControls() {
-        const audioControls = document.createElement('div');
-        audioControls.id = 'audio-controls';
-        audioControls.innerHTML = `
-            <button id="toggle-music" class="audio-control-btn" title="Toggle Music">🎵</button>
-            <button id="toggle-engine" class="audio-control-btn" title="Toggle Engine Sound">🚁</button>
-        `;
-        
-        document.getElementById('ui-overlay').appendChild(audioControls);
-        
-        // Setup audio control handlers
-        document.getElementById('toggle-music').addEventListener('click', () => {
-            this.audioManager.toggleMusic();
-            this.audioManager.playSound('buttonClick');
-        });
-        
-        document.getElementById('toggle-engine').addEventListener('click', () => {
-            const btn = document.getElementById('toggle-engine');
-            if (this.audioManager.enginePlaying) {
-                this.audioManager.stopEngineSound();
-                btn.classList.remove('active');
-            } else {
+        // Auto-start engine sound when audio is enabled
+        setTimeout(() => {
+            if (this.audioManager.audioEnabled) {
                 this.audioManager.startEngineSound();
-                btn.classList.add('active');
             }
-            this.audioManager.playSound('buttonClick');
-        });
+        }, 1000);
     }
 
     createScene() {

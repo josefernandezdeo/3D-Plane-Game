@@ -30,6 +30,9 @@ export class AudioManager {
             // Load background music
             await this.loadMusic();
             
+            // Load aircraft engine sound
+            await this.loadAircraftSound();
+            
             // Create synthesized sound effects
             this.createSoundEffects();
             
@@ -95,6 +98,11 @@ export class AudioManager {
             // Start background music
             this.playBackgroundMusic();
             
+            // Auto-start engine sound
+            setTimeout(() => {
+                this.startEngineSound();
+            }, 500);
+            
             console.log('Audio enabled successfully');
         } catch (error) {
             console.warn('Failed to enable audio:', error);
@@ -111,6 +119,19 @@ export class AudioManager {
             console.log('Background music loaded successfully');
         } catch (error) {
             console.warn('Failed to load background music:', error);
+        }
+    }
+
+    async loadAircraftSound() {
+        try {
+            const response = await fetch('assets/audio/sfx/aircraft.mp3');
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            
+            this.sounds.aircraftEngine = audioBuffer;
+            console.log('Aircraft engine sound loaded successfully');
+        } catch (error) {
+            console.warn('Failed to load aircraft engine sound:', error);
         }
     }
     
@@ -139,7 +160,8 @@ export class AudioManager {
         oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(50, this.audioContext.currentTime + duration);
         
-        gainNode.gain.setValueAtTime(this.volume.sfx * this.volume.master, this.audioContext.currentTime);
+        // Reduced volume by 60% (0.4 = 40% of original volume)
+        gainNode.gain.setValueAtTime(this.volume.sfx * this.volume.master * 0.4, this.audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
         
         oscillator.connect(gainNode);
@@ -232,52 +254,51 @@ export class AudioManager {
     
     // Engine sound management
     startEngineSound() {
-        if (!this.audioEnabled || !this.audioContext || this.enginePlaying) return;
+        if (!this.audioEnabled || !this.audioContext || this.enginePlaying || !this.sounds.aircraftEngine) return;
         
+        // Create buffer source and gain node for aircraft sound
         this.engineSound = {
-            oscillator: this.audioContext.createOscillator(),
-            gainNode: this.audioContext.createGain(),
-            filter: this.audioContext.createBiquadFilter()
+            source: this.audioContext.createBufferSource(),
+            gainNode: this.audioContext.createGain()
         };
         
-        // Create engine sound with filtered sawtooth wave
-        this.engineSound.oscillator.type = 'sawtooth';
-        this.engineSound.oscillator.frequency.setValueAtTime(100, this.audioContext.currentTime);
+        // Setup aircraft engine sound
+        this.engineSound.source.buffer = this.sounds.aircraftEngine;
+        this.engineSound.source.loop = true;
+        this.engineSound.source.playbackRate.setValueAtTime(0.8, this.audioContext.currentTime); // Start slower
         
-        this.engineSound.filter.type = 'lowpass';
-        this.engineSound.filter.frequency.setValueAtTime(300, this.audioContext.currentTime);
-        
+        // Fade in the engine sound
         this.engineSound.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
         this.engineSound.gainNode.gain.linearRampToValueAtTime(
             this.volume.engine * this.volume.master, 
             this.audioContext.currentTime + 0.5
         );
         
-        this.engineSound.oscillator.connect(this.engineSound.filter);
-        this.engineSound.filter.connect(this.engineSound.gainNode);
+        // Connect audio nodes
+        this.engineSound.source.connect(this.engineSound.gainNode);
         this.engineSound.gainNode.connect(this.audioContext.destination);
         
-        this.engineSound.oscillator.start();
+        // Start playing
+        this.engineSound.source.start();
         this.enginePlaying = true;
     }
     
     updateEngineSound(speed) {
         if (!this.engineSound || !this.enginePlaying) return;
         
-        // Map speed (5-25) to frequency (80-250 Hz)
+        // Map speed (5-25) to playback rate (0.6-1.4)
         const normalizedSpeed = Math.max(0, Math.min(1, (speed - 5) / 20));
-        const frequency = 80 + (normalizedSpeed * 170);
-        const filterFreq = 200 + (normalizedSpeed * 400);
+        const playbackRate = 0.6 + (normalizedSpeed * 0.8);
         
-        this.engineSound.oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-        this.engineSound.filter.frequency.setValueAtTime(filterFreq, this.audioContext.currentTime);
+        this.engineSound.source.playbackRate.setValueAtTime(playbackRate, this.audioContext.currentTime);
     }
     
     stopEngineSound() {
         if (!this.engineSound || !this.enginePlaying) return;
         
+        // Fade out and stop
         this.engineSound.gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.5);
-        this.engineSound.oscillator.stop(this.audioContext.currentTime + 0.5);
+        this.engineSound.source.stop(this.audioContext.currentTime + 0.5);
         this.enginePlaying = false;
         this.engineSound = null;
     }
