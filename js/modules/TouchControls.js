@@ -6,13 +6,29 @@ export class TouchControls {
             speedUp: false,
             speedDown: false,
             fire: false,
-            camera: false
+            cameraReset: false
+        };
+        
+        // Camera movement
+        this.cameraRotation = {
+            deltaX: 0,
+            deltaY: 0,
+            isActive: false
         };
         
         this.joystickActive = false;
         this.joystickCenter = { x: 0, y: 0 };
         this.joystickRadius = 60;
         this.joystickMaxDistance = 50;
+        
+        // Camera touch tracking
+        this.cameraTouch = {
+            startX: 0,
+            startY: 0,
+            lastX: 0,
+            lastY: 0,
+            active: false
+        };
         
         this.buttons = {};
         
@@ -22,6 +38,7 @@ export class TouchControls {
     init() {
         this.createTouchUI();
         this.setupTouchEvents();
+        this.setupCameraTouch();
     }
     
     createTouchUI() {
@@ -49,9 +66,14 @@ export class TouchControls {
                 <button id="fire-btn" class="control-btn fire-btn">FIRE</button>
             </div>
             
-            <!-- Camera Toggle -->
+            <!-- Camera Reset Button -->
             <div id="camera-container">
-                <button id="camera-btn" class="control-btn camera-btn">📷</button>
+                <button id="camera-btn" class="control-btn camera-btn">🔄</button>
+            </div>
+            
+            <!-- Camera instructions -->
+            <div id="camera-instructions">
+                <div class="instruction-text">Drag to look around</div>
             </div>
         `;
         
@@ -76,6 +98,103 @@ export class TouchControls {
         
         // Button events
         this.setupButtonEvents();
+    }
+    
+    setupCameraTouch() {
+        // Camera movement via screen touch (excluding control areas)
+        const gameCanvas = document.getElementById('game-canvas');
+        
+        const isTouchInControlArea = (x, y) => {
+            // Check if touch is in any control area
+            const joystick = this.joystickContainer.getBoundingClientRect();
+            const speedControls = document.getElementById('speed-controls').getBoundingClientRect();
+            const fireButton = document.getElementById('fire-container').getBoundingClientRect();
+            const cameraButton = document.getElementById('camera-container').getBoundingClientRect();
+            
+            return (
+                (x >= joystick.left && x <= joystick.right && y >= joystick.top && y <= joystick.bottom) ||
+                (x >= speedControls.left && x <= speedControls.right && y >= speedControls.top && y <= speedControls.bottom) ||
+                (x >= fireButton.left && x <= fireButton.right && y >= fireButton.top && y <= fireButton.bottom) ||
+                (x >= cameraButton.left && x <= cameraButton.right && y >= cameraButton.top && y <= cameraButton.bottom)
+            );
+        };
+        
+        gameCanvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            if (!isTouchInControlArea(touch.clientX, touch.clientY)) {
+                this.cameraTouch.active = true;
+                this.cameraTouch.startX = touch.clientX;
+                this.cameraTouch.startY = touch.clientY;
+                this.cameraTouch.lastX = touch.clientX;
+                this.cameraTouch.lastY = touch.clientY;
+                this.cameraRotation.isActive = true;
+                e.preventDefault();
+            }
+        });
+        
+        gameCanvas.addEventListener('touchmove', (e) => {
+            if (this.cameraTouch.active && e.touches.length > 0) {
+                const touch = e.touches[0];
+                
+                // Calculate delta movement
+                const deltaX = touch.clientX - this.cameraTouch.lastX;
+                const deltaY = touch.clientY - this.cameraTouch.lastY;
+                
+                // Apply sensitivity and store for camera rotation
+                const sensitivity = 0.003;
+                this.cameraRotation.deltaX = deltaX * sensitivity;
+                this.cameraRotation.deltaY = deltaY * sensitivity;
+                
+                this.cameraTouch.lastX = touch.clientX;
+                this.cameraTouch.lastY = touch.clientY;
+                
+                e.preventDefault();
+            }
+        });
+        
+        gameCanvas.addEventListener('touchend', (e) => {
+            this.cameraTouch.active = false;
+            this.cameraRotation.isActive = false;
+            this.cameraRotation.deltaX = 0;
+            this.cameraRotation.deltaY = 0;
+            e.preventDefault();
+        });
+        
+        // Mouse events for desktop testing
+        let mouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        gameCanvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            this.cameraRotation.isActive = true;
+            e.preventDefault();
+        });
+        
+        gameCanvas.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                
+                const sensitivity = 0.003;
+                this.cameraRotation.deltaX = deltaX * sensitivity;
+                this.cameraRotation.deltaY = deltaY * sensitivity;
+                
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                e.preventDefault();
+            }
+        });
+        
+        gameCanvas.addEventListener('mouseup', (e) => {
+            mouseDown = false;
+            this.cameraRotation.isActive = false;
+            this.cameraRotation.deltaX = 0;
+            this.cameraRotation.deltaY = 0;
+            e.preventDefault();
+        });
     }
     
     setupJoystickEvents() {
@@ -175,15 +294,15 @@ export class TouchControls {
             this.touchInputs.fire = false;
         });
         
-        // Camera button (toggle on press)
+        // Camera reset button
         this.buttons.camera.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            this.touchInputs.camera = true;
+            this.touchInputs.cameraReset = true;
         });
         
         this.buttons.camera.addEventListener('click', (e) => {
             e.preventDefault();
-            this.touchInputs.camera = true;
+            this.touchInputs.cameraReset = true;
         });
     }
     
@@ -234,9 +353,13 @@ export class TouchControls {
         return this.touchInputs;
     }
     
-    consumeCameraToggle() {
-        const wasPressed = this.touchInputs.camera;
-        this.touchInputs.camera = false;
+    getCameraMovement() {
+        return this.cameraRotation;
+    }
+    
+    consumeCameraReset() {
+        const wasPressed = this.touchInputs.cameraReset;
+        this.touchInputs.cameraReset = false;
         return wasPressed;
     }
 } 

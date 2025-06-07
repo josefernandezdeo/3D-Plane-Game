@@ -30,6 +30,14 @@ class Game {
         this.lastFrameTime = performance.now();
         this.cameraMode = 'follow'; // 'follow' or 'orbit'
         
+        // Camera movement state
+        this.cameraRotation = {
+            yaw: 0,
+            pitch: 0,
+            targetYaw: 0,
+            targetPitch: 0
+        };
+        
         this.init();
     }
 
@@ -214,11 +222,26 @@ class Game {
         if (this.touchControls) {
             this.controls = this.touchControls.getControls();
             
-            // Handle camera toggle
-            if (this.touchControls.consumeCameraToggle()) {
-                this.cameraMode = this.cameraMode === 'follow' ? 'orbit' : 'follow';
-                console.log(`Camera mode: ${this.cameraMode}`);
+            // Handle camera movement
+            const cameraMovement = this.touchControls.getCameraMovement();
+            if (cameraMovement.isActive) {
+                this.cameraRotation.targetYaw += cameraMovement.deltaX;
+                this.cameraRotation.targetPitch += cameraMovement.deltaY;
+                
+                // Clamp pitch to prevent flipping
+                this.cameraRotation.targetPitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.cameraRotation.targetPitch));
             }
+            
+            // Handle camera reset
+            if (this.touchControls.consumeCameraReset()) {
+                this.cameraRotation.targetYaw = 0;
+                this.cameraRotation.targetPitch = 0;
+                console.log('Camera reset to default view');
+            }
+            
+            // Smooth camera rotation interpolation
+            this.cameraRotation.yaw += (this.cameraRotation.targetYaw - this.cameraRotation.yaw) * 0.1;
+            this.cameraRotation.pitch += (this.cameraRotation.targetPitch - this.cameraRotation.pitch) * 0.1;
         }
         
         // Update plane with controls and delta time
@@ -285,43 +308,40 @@ class Game {
     
     updateCamera() {
         const planePosition = this.plane.getGroup().position;
+        const planeRotation = this.plane.getGroup().rotation;
         
-        if (this.cameraMode === 'follow') {
-            // Simplified and more stable follow camera
-            const planeRotation = this.plane.getGroup().rotation;
-            
-            // Camera offset behind and above plane (fixed relative position)
-            const offset = new THREE.Vector3(0, 8, -25);
-            
-            // Apply plane's yaw rotation to offset
-            const rotatedOffset = offset.clone();
-            rotatedOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), planeRotation.y);
-            
-            // Target camera position
-            const targetPosition = planePosition.clone().add(rotatedOffset);
-            
-            // Smooth camera movement
-            this.camera.position.lerp(targetPosition, 0.08);
-            
-            // Simple look-at target (slightly ahead of plane)
-            const lookAtTarget = planePosition.clone();
-            lookAtTarget.y += 2; // Look slightly above the plane
-            
-            // Add forward offset based on plane direction
-            const forwardOffset = new THREE.Vector3(0, 0, 5);
-            forwardOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), planeRotation.y);
-            lookAtTarget.add(forwardOffset);
-            
-            this.camera.lookAt(lookAtTarget);
-            
-        } else if (this.cameraMode === 'orbit') {
-            // Simplified orbit mode - fixed distance, look at plane
-            const distance = 30;
-            const currentOffset = this.camera.position.clone().sub(planePosition);
-            currentOffset.normalize().multiplyScalar(distance);
-            this.camera.position.copy(planePosition.clone().add(currentOffset));
-            this.camera.lookAt(planePosition);
-        }
+        // Enhanced follow camera with touch-based free look
+        // Camera offset behind and above plane
+        const baseOffset = new THREE.Vector3(0, 8, -25);
+        
+        // Apply plane's yaw rotation to base offset
+        const rotatedOffset = baseOffset.clone();
+        rotatedOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), planeRotation.y);
+        
+        // Apply additional camera rotation from touch input
+        const cameraYawRotation = new THREE.Matrix4().makeRotationY(this.cameraRotation.yaw);
+        const cameraPitchRotation = new THREE.Matrix4().makeRotationX(this.cameraRotation.pitch);
+        const cameraRotationMatrix = new THREE.Matrix4().multiplyMatrices(cameraYawRotation, cameraPitchRotation);
+        
+        rotatedOffset.applyMatrix4(cameraRotationMatrix);
+        
+        // Target camera position
+        const targetPosition = planePosition.clone().add(rotatedOffset);
+        
+        // Smooth camera movement
+        this.camera.position.lerp(targetPosition, 0.08);
+        
+        // Look-at target with camera rotation applied
+        const lookAtTarget = planePosition.clone();
+        lookAtTarget.y += 2; // Look slightly above the plane
+        
+        // Add forward offset based on plane direction and camera rotation
+        const forwardOffset = new THREE.Vector3(0, 0, 5);
+        forwardOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), planeRotation.y);
+        forwardOffset.applyMatrix4(cameraRotationMatrix);
+        lookAtTarget.add(forwardOffset);
+        
+        this.camera.lookAt(lookAtTarget);
     }
 
     checkCollisions() {

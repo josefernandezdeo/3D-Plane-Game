@@ -217,6 +217,26 @@ body {
     font-size: 16px;
 }
 
+/* Camera Instructions */
+#camera-instructions {
+    position: absolute;
+    top: env(safe-area-inset-top, 70px);
+    left: 20px;
+    pointer-events: none;
+}
+
+.instruction-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: bold;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(3px);
+    white-space: nowrap;
+}
+
 /* General Button Styles */
 .control-btn {
     border: none;
@@ -273,6 +293,15 @@ body {
         font-size: 11px;
         padding: 6px 10px;
         min-width: 100px;
+    }
+    
+    #camera-instructions {
+        top: env(safe-area-inset-top, 60px);
+    }
+    
+    .instruction-text {
+        font-size: 10px;
+        padding: 3px 6px;
     }
 }
 
