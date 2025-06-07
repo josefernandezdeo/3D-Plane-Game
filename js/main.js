@@ -3,6 +3,7 @@ import { City } from './modules/City.js';
 import { UFOManager } from './modules/UFO.js';
 import { WeaponSystem, ExplosionSystem } from './modules/Weapon.js';
 import { TouchControls } from './modules/TouchControls.js';
+import { AudioManager } from './modules/AudioManager.js';
 
 class Game {
     constructor() {
@@ -15,6 +16,7 @@ class Game {
         this.weaponSystem = null;
         this.explosionSystem = null;
         this.touchControls = null;
+        this.audioManager = null;
         this.controls = {
             forward: false,
             backward: false,
@@ -38,10 +40,10 @@ class Game {
             targetPitch: 0
         };
         
-        this.init();
+        // Don't auto-init, let it be called externally
     }
 
-    init() {
+    async init() {
         this.createScene();
         this.createCamera();
         this.createRenderer();
@@ -50,10 +52,53 @@ class Game {
         this.createPlane();
         this.createCombatSystems();
         this.setupControls();
+        await this.setupAudio();
         this.animate();
         
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    async setupAudio() {
+        this.audioManager = new AudioManager();
+        await this.audioManager.init();
+        
+        // Update touch controls with audio manager
+        if (this.touchControls) {
+            this.touchControls.audioManager = this.audioManager;
+        }
+        
+        // Add audio control buttons to UI
+        this.createAudioControls();
+    }
+
+    createAudioControls() {
+        const audioControls = document.createElement('div');
+        audioControls.id = 'audio-controls';
+        audioControls.innerHTML = `
+            <button id="toggle-music" class="audio-control-btn" title="Toggle Music">🎵</button>
+            <button id="toggle-engine" class="audio-control-btn" title="Toggle Engine Sound">🚁</button>
+        `;
+        
+        document.getElementById('ui-overlay').appendChild(audioControls);
+        
+        // Setup audio control handlers
+        document.getElementById('toggle-music').addEventListener('click', () => {
+            this.audioManager.toggleMusic();
+            this.audioManager.playSound('buttonClick');
+        });
+        
+        document.getElementById('toggle-engine').addEventListener('click', () => {
+            const btn = document.getElementById('toggle-engine');
+            if (this.audioManager.enginePlaying) {
+                this.audioManager.stopEngineSound();
+                btn.classList.remove('active');
+            } else {
+                this.audioManager.startEngineSound();
+                btn.classList.add('active');
+            }
+            this.audioManager.playSound('buttonClick');
+        });
     }
 
     createScene() {
@@ -159,7 +204,7 @@ class Game {
     }
 
     setupControls() {
-        // Touch controls
+        // Touch controls (will be updated with audioManager after audio setup)
         this.touchControls = new TouchControls();
         
         // Prevent default behavior for control keys (still needed for any remaining keyboard input)
@@ -249,6 +294,12 @@ class Game {
             this.plane.update(this.controls, deltaTime);
             this.updateCamera();
             
+            // Update engine sound based on plane speed
+            if (this.audioManager && this.audioManager.enginePlaying) {
+                const flightData = this.plane.getFlightData();
+                this.audioManager.updateEngineSound(flightData.speed);
+            }
+            
             // Handle firing
             if (this.controls.fire) {
                 const projectile = this.weaponSystem.fire(
@@ -257,6 +308,10 @@ class Game {
                 );
                 if (projectile) {
                     this.scene.add(projectile.getMesh());
+                    // Play gunfire sound
+                    if (this.audioManager) {
+                        this.audioManager.playSound('gunfire');
+                    }
                 }
             }
         }
@@ -353,6 +408,12 @@ class Game {
             // Create explosion at UFO position
             const explosion = this.explosionSystem.createExplosion(hit.position);
             
+            // Play explosion and UFO hit sounds
+            if (this.audioManager) {
+                this.audioManager.playSound('explosion');
+                this.audioManager.playSound('ufoHit');
+            }
+            
             // Remove UFO from scene
             this.scene.remove(hit.ufo.getGroup());
             hit.ufo.takeDamage();
@@ -377,6 +438,7 @@ class Game {
 }
 
 // Start the game when the page loads
-window.addEventListener('DOMContentLoaded', () => {
-    new Game();
+window.addEventListener('DOMContentLoaded', async () => {
+    const game = new Game();
+    await game.init();
 }); 

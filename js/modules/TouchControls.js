@@ -1,5 +1,6 @@
 export class TouchControls {
-    constructor() {
+    constructor(audioManager = null) {
+        this.audioManager = audioManager;
         this.touchInputs = {
             pitch: 0,    // -1 to 1 (up/down)
             roll: 0,     // -1 to 1 (left/right) 
@@ -277,12 +278,14 @@ export class TouchControls {
         // Speed buttons
         this.setupButton('speedUp', () => {
             this.touchInputs.speedUp = true;
+            if (this.audioManager) this.audioManager.playSound('buttonClick');
         }, () => {
             this.touchInputs.speedUp = false;
         });
         
         this.setupButton('speedDown', () => {
             this.touchInputs.speedDown = true;
+            if (this.audioManager) this.audioManager.playSound('buttonClick');
         }, () => {
             this.touchInputs.speedDown = false;
         });
@@ -298,11 +301,13 @@ export class TouchControls {
         this.buttons.camera.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.touchInputs.cameraReset = true;
+            if (this.audioManager) this.audioManager.playSound('buttonClick');
         });
         
         this.buttons.camera.addEventListener('click', (e) => {
             e.preventDefault();
             this.touchInputs.cameraReset = true;
+            if (this.audioManager) this.audioManager.playSound('buttonClick');
         });
     }
     
