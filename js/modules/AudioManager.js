@@ -137,12 +137,11 @@ export class AudioManager {
     
     createSoundEffects() {
         // All sound effects will be created using Web Audio API synthesis
-        this.sounds = {
-            gunfire: this.createGunfireSound,
-            explosion: this.createExplosionSound,
-            buttonClick: this.createButtonClickSound,
-            ufoHit: this.createUfoHitSound
-        };
+        // Don't overwrite existing sounds (like aircraftEngine), just add to them
+        this.sounds.gunfire = this.createGunfireSound;
+        this.sounds.explosion = this.createExplosionSound;
+        this.sounds.buttonClick = this.createButtonClickSound;
+        this.sounds.ufoHit = this.createUfoHitSound;
     }
     
     // Synthesized sound effects
@@ -160,8 +159,8 @@ export class AudioManager {
         oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(50, this.audioContext.currentTime + duration);
         
-        // Reduced volume by 60% (0.4 = 40% of original volume)
-        gainNode.gain.setValueAtTime(this.volume.sfx * this.volume.master * 0.4, this.audioContext.currentTime);
+        // Reduced volume by 80% (0.2 = 20% of original volume)
+        gainNode.gain.setValueAtTime(this.volume.sfx * this.volume.master * 0.2, this.audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
         
         oscillator.connect(gainNode);
@@ -254,7 +253,14 @@ export class AudioManager {
     
     // Engine sound management
     startEngineSound() {
-        if (!this.audioEnabled || !this.audioContext || this.enginePlaying || !this.sounds.aircraftEngine) return;
+        if (!this.audioEnabled || !this.audioContext || this.enginePlaying) return;
+        
+        if (!this.sounds.aircraftEngine) {
+            console.warn('Aircraft engine sound not loaded yet');
+            return;
+        }
+        
+        console.log('Starting aircraft engine sound');
         
         // Create buffer source and gain node for aircraft sound
         this.engineSound = {
